@@ -176,6 +176,16 @@ void setup() {
     xTaskCreatePinnedToCore(MPU_GET, "MPU_GET",    10000,    NULL,    1,    &Task1,   1);
 
     connect_to_wifi();//This functions tries to connect to either wifi ssids, if not connected previously
+     //Deducing MpAcID of the ESP32 and stores in variable name device_ide
+   chipid = ESP.getEfuseMac(); //The chip ID is essentially its MAC address(length: 6 bytes).
+   sprintf(id_, "%04X", (uint16_t)(chipid >> 32));
+   sprintf(id_1, "%08X\n", (uint32_t)chipid);
+   strcat(kid, id_);
+   strcat(kid, id_1);
+   sprintf(k_id, "%c%c%c%c%c%c%c%c%c%c%c%c", kid[10], kid[11], kid[8], kid[9], kid[6], kid[7], kid[4], kid[5], kid[2], kid[3], kid[0], kid[1]);//k_id is the ssid name of AP
+   Serial.println(k_id);
+   device_id = atoi(k_id);
+    
     vTaskDelete(NULL);
 
 }
@@ -440,6 +450,7 @@ void codeForDataSend() {
 
 // }
 /*
+
     Array to string function accepts the strting address of array
    Then sends it in chunks of N_set_send data points
 */
@@ -449,7 +460,9 @@ String array_to_string(int16_t *Ac) {
   stringData = String(Ac[i_start]); // this is to make sure that the stringData does not start with a "_" character
   for (int i = 1; i < N; i++) {
     stringData = stringData + "_" + String(Ac[i]);
+   
   }
+  // Serial.println("String data"); Serial.println(stringData);
 
   return stringData;
 }
