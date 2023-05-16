@@ -60,6 +60,9 @@ void setup() {
   }
   if (!myMPU9250.initMagnetometer()) {
     Serial.println("Magnetometer does not respond");
+    delay(100);
+    Serial.println("ESP getting restart");
+    ESP.restart();
   }
   else {
     Serial.println("Magnetometer is connected");
@@ -78,50 +81,50 @@ void setup() {
 }
 
 void loop() {
+  Serial.println("Data Gathering Started");
   for (int i = 0; i < N; i++)
   {
-    //    if (micros() >= (lastMicros + MINIMUM_SAMPLING_DELAY_uSec)) {
-    //      lastMicros = micros();
-    xyzFloat gValue = myMPU9250.getGValues();
-    xyzFloat gyr = myMPU9250.getGyrValues();
-    xyzFloat magValue = myMPU9250.getMagValues();
+    if (micros() >= (lastMicros + MINIMUM_SAMPLING_DELAY_uSec)) {
+      lastMicros = micros();
 
-    //      Bx = magValue.x - Mag_bias[0];
-    //      By = magValue.y - Mag_bias[1];
-    //      Bz = magValue.z - Mag_bias[2];
-    //      Serial.print(Bx); Serial.print(By); Serial.println(Bz);
+      xyzFloat gValue = myMPU9250.getGValues();
+      xyzFloat gyr = myMPU9250.getGyrValues();
+      xyzFloat magValue = myMPU9250.getMagValues();
 
-    Ax[i] = (gValue.x - Acc_bias[0]) * acc_factor;
-    Ay[i] = (gValue.y  - Acc_bias[1]) * acc_factor;
-    Az[i] = (gValue.z - Acc_bias[2]) * acc_factor;
-    Gx[i] = (gyr.x - Gyro_bias[0]) * gyr_factor;
-    Gy[i] = (gyr.y - Gyro_bias[1]) * gyr_factor;
-    Gz[i] = (gyr.z - Gyro_bias[2]) * gyr_factor;
-    Mx[i] = (magValue.x - Mag_bias[0]);
-    My[i] = (magValue.y - Mag_bias[1]);
-    Mz[i] = (magValue.z - Mag_bias[2]);
+      //      Bx = magValue.x - Mag_bias[0];
+      //      By = magValue.y - Mag_bias[1];
+      //      Bz = magValue.z - Mag_bias[2];
+      //      Serial.print(Bx); Serial.print(By); Serial.println(Bz);
 
-    //        Serial.write(SYNC_BYTE); // Send the start/sync byte
-    //        Serial.write((uint8_t*)&(Bx), sizeof(Bx));      //Unit: uTesla
-    //        Serial.write((uint8_t*)&(By), sizeof(By));
-    //        Serial.write((uint8_t*)&(Bz), sizeof(Bz));
-    Serial.println(i);
-    //    Serial.print(" Ax ="); Serial.print(Ax[i]);
-    //    Serial.print(" Ay ="); Serial.print(Ay[i]);
-    //    Serial.print(" Az ="); Serial.println(Az[i]);
-    //    Serial.print(" Gx ="); Serial.print(Gx[i]);
-    //    Serial.print(" Gy ="); Serial.print(Gy[i]);
-    //    Serial.print(" Gz ="); Serial.println(Gz[i]);
-    //    Serial.print(" Mx ="); Serial.print(Mx[i]);
-    //    Serial.print(" My ="); Serial.print(My[i]);
-    //    Serial.print(" Mz ="); Serial.println(Mz[i]);
-    delay(1);
+      Ax[i] = (gValue.x - Acc_bias[0]) * acc_factor;
+      Ay[i] = (gValue.y  - Acc_bias[1]) * acc_factor;
+      Az[i] = (gValue.z - Acc_bias[2]) * acc_factor;
+      Gx[i] = (gyr.x - Gyro_bias[0]) * gyr_factor;
+      Gy[i] = (gyr.y - Gyro_bias[1]) * gyr_factor;
+      Gz[i] = (gyr.z - Gyro_bias[2]) * gyr_factor;
+      Mx[i] = (magValue.x - Mag_bias[0]);
+      My[i] = (magValue.y - Mag_bias[1]);
+      Mz[i] = (magValue.z - Mag_bias[2]);
+      //    Serial.print(" Ax ="); Serial.print(Ax[i]);
+      //    Serial.print(" Ay ="); Serial.print(Ay[i]);
+      //    Serial.print(" Az ="); Serial.println(Az[i]);
+      //    Serial.print(" Gx ="); Serial.print(Gx[i]);
+      //    Serial.print(" Gy ="); Serial.print(Gy[i]);
+      //    Serial.print(" Gz ="); Serial.println(Gz[i]);
+      //    Serial.print(" Mx ="); Serial.print(Mx[i]);
+      //    Serial.print(" My ="); Serial.print(My[i]);
+      //    Serial.print(" Mz ="); Serial.println(Mz[i]);
+    }
+    else {
+      i--;
+    }
   }
 
-  delay(500);
+  //  delay(500);
+  Serial.println("Data Gather completed");
   connect_to_wifi();
-  SendData_rawdata();
-  delay(5000);
+  //  SendData_rawdata();
+  delay(2000);
 }
 
 void calibrate_MPU(float acc_bias[], float gyro_bias[], float mag_bias[]) { //pass array by ref
@@ -166,7 +169,7 @@ void calibrate_MPU(float acc_bias[], float gyro_bias[], float mag_bias[]) { //pa
 
 int connect_to_wifi() {
   int timeout = millis();
-  Serial.print("inside wifi connect & wifi status = ");
+  Serial.print("Inside wifi connect & wifi status = ");
   Serial.println(WiFi.status());
   while (WiFi.status() != 3)
   {
@@ -175,13 +178,15 @@ int connect_to_wifi() {
     delay(5000);
     Serial.println("after connection");
     Serial.println(WiFi.status());
-    int returnbit = 1;
-    Serial.println(returnbit);
+    int returnbit = internet_check();
+    Serial.print("Return bitdata = "); Serial.println(returnbit);
     if (WiFi.status() == 3 && returnbit == 1)
     {
-      Serial.println("Connected to ssid1");
+      Serial.println("Connected to SSID 1 ");
       strncpy(ssid_current, ssid1, 15);       //If connected to ssid1, copy ssid1 name into ssid_current
       //      vTaskResume(Task1);
+      Serial.println("Ready to send data");
+      SendData_rawdata();
       return 1;
     }
 
@@ -189,10 +194,13 @@ int connect_to_wifi() {
       WiFi.begin(ssid2, password2);
       delay(5000);
       int returnbit = internet_check();
+      Serial.print("Return bitdata = "); Serial.println(returnbit);
       if (WiFi.status() == 3 && returnbit == 1) {
         Serial.println("Connected to ssid2");
         strncpy(ssid_current, ssid2, 15);
         //        vTaskResume(Task1);
+        Serial.println("Ready to send data");
+        SendData_rawdata();
         return 2;
       }
     }
@@ -207,14 +215,16 @@ int connect_to_wifi() {
       Serial.println("Couldnt Connect to any ssid");
       wifi_counter += 1;
       Serial.print("WiFi Counter"); Serial.println(wifi_counter);
-
     }
   }
-  int returnbit = 1;
+  int returnbit = internet_check();
+  Serial.print("Return bitdata = "); Serial.println(returnbit);
   if (returnbit == 1)
   {
     Serial.println("internet available");
     //    vTaskResume(Task1);
+    Serial.println("Ready to send data");
+    SendData_rawdata();
   }
   else
   {
@@ -236,14 +246,12 @@ int connect_to_wifi() {
 
 int internet_check()
 {
-
   Serial.print("Pinging host ");
   Serial.println(remote_host);
 
-
   int ret = Ping.ping(remote_host);
   delay(2000);
-  Serial.print("return bit-");
+  Serial.print("return bit = ");
   Serial.println(ret);
   //return ret;
 
@@ -262,8 +270,6 @@ int internet_check()
 }
 void SendData_rawdata() {
   String Body = "";
-  Serial.println(String(k_id));
-  Serial.println(k_id);
   Body = "CHIPID=" + String(k_id) + "&Header=" + "AcX_AcY_AcZ_GyX_GyY_GyZ_Mx_Mz" + "&Row=" + String(N) + "&Column=" + "9" + "&serialno="
          + String(Srn) + "&Input0=" + array_to_string(Ax) + "&Input1=" + array_to_string(Ay) + "&Input2=" + array_to_string(Az)
          + "&Input3=" + array_to_string(Gx) + "&Input4=" + array_to_string(Gy) + "&Input5=" + array_to_string(Gz)
@@ -328,7 +334,7 @@ String array_to_string(int16_t *Ac) {
   for (int i = 1; i < N; i++) {
     stringData = stringData + "_" + String(Ac[i]);
   }
-//  Serial.println(stringData);
+  //  Serial.println(stringData);
 
   return stringData;
 }
